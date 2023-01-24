@@ -16,21 +16,27 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  public register(@Body() body: Omit<User, 'id'>) {
+  private register(@Body() body: Omit<User, 'id'>) {
     return this.authService.register(body);
   }
 
-  @UseGuards(LocalAuthGuard)
   @Post('login')
-  public login(@Request() req) {
+  @UseGuards(LocalAuthGuard)
+  private login(@Request() req) {
     return req.user;
   }
-  // public login(@Body() body: Pick<User, 'email' | 'password'>) {
-  //   return this.authService.login(body.email, body.password);
-  // }
-  @UseGuards(JwtAuthGuard)
+
   @Get('profile')
-  getProfile(@Request() req) {
+  @UseGuards(JwtAuthGuard)
+  private getProfile(@Request() req) {
     return req.user;
+  }
+
+  @Post('refresh')
+  @UseGuards(JwtAuthGuard)
+  private refresh(
+    @Request() req: Omit<User, 'password'>,
+  ): Promise<string | never> {
+    return this.authService.refresh(req);
   }
 }

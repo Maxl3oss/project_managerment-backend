@@ -1,3 +1,4 @@
+import { ProductService } from './product/product.service';
 import { ProductController } from './product/product.controller';
 import { LoggerMiddleware } from './core/logger.middleware';
 import { MiddlewareConsumer, Module } from '@nestjs/common';
@@ -12,9 +13,6 @@ import { LocalStrategy } from './auth/local.strategy';
 import { AuthService } from './auth/auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from './auth/constants';
-// Guard
-// import { RolesGuard } from './core/roles.guard';
-// import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -29,6 +27,7 @@ import { jwtConstants } from './auth/constants';
   ],
   controllers: [AppController],
   providers: [
+    ProductService,
     AppService,
     AuthService,
     FirebaseService,

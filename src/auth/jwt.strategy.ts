@@ -12,9 +12,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       secretOrKey: jwtConstants.secret,
     });
   }
-
   async validate(payload: any) {
-    console.log(`[JWT.STRATEGY] -> ${JSON.stringify(payload)}`);
-    return { id: payload.id, name: payload.name };
+    const user = {
+      id: payload.id,
+      name: payload.name,
+      email: payload.email,
+      roles: payload.roles,
+    };
+    return user;
   }
 }

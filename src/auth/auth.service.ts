@@ -46,9 +46,10 @@ export class AuthService {
         delete loggedUser.password;
 
         const payload = {
+          id: loggedUser.id,
           name: loggedUser.name,
           email: loggedUser.email,
-          id: loggedUser.id,
+          roles: loggedUser.roles,
         };
 
         // return loggedUser;
@@ -58,16 +59,13 @@ export class AuthService {
       }
     } catch (error) {
       const firebaseAuthError = error as AuthError;
-
       console.log(`[FIREBASE AUTH ERROR CODE] -> ${firebaseAuthError.code}`);
-
       if (firebaseAuthError.code === 'auth/wrong-password') {
         throw new HttpException(
           'Email or password incorrect.',
           HttpStatus.FORBIDDEN,
         );
       }
-
       if (firebaseAuthError.code === 'auth/user-not-found') {
         throw new HttpException('Email not found.', HttpStatus.NOT_FOUND);
       }
@@ -97,5 +95,17 @@ export class AuthService {
         throw new HttpException('Email already exists.', HttpStatus.CONFLICT);
       }
     }
+  }
+
+  public async refresh(user: Omit<User, 'password'>): Promise<any> {
+    const payload = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      roles: user.roles,
+    };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
   }
 }
