@@ -18,6 +18,7 @@ export class FirebaseService {
 
   // collections
   public usersCollection: CollectionReference;
+  public productCollection: CollectionReference;
 
   constructor(private configService: ConfigService<Config>) {
     this.app = initializeApp({
@@ -36,5 +37,6 @@ export class FirebaseService {
   }
   private _createCollections() {
     this.usersCollection = collection(this.fireStore, 'users');
+    this.productCollection = collection(this.fireStore, 'products');
   }
 }

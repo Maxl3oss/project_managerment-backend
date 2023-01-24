@@ -12,7 +12,7 @@ import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from './auth/local.strategy';
 import { AuthService } from './auth/auth.service';
 import { JwtModule } from '@nestjs/jwt';
-import { jwtConstants } from './auth/constants';
+import { jwtConstants } from './auth/jwt.constants';
 
 @Module({
   imports: [
