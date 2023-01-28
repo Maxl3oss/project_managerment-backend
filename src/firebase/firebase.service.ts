@@ -9,16 +9,25 @@ import {
   Firestore,
   getFirestore,
 } from 'firebase/firestore';
+import {
+  ref,
+  getStorage,
+  FirebaseStorage,
+  StorageReference,
+} from 'firebase/storage';
 
 @Injectable()
 export class FirebaseService {
   public app: FirebaseApp;
   public auth: Auth;
   public fireStore: Firestore;
+  public firebaseStorage: FirebaseStorage;
 
   // collections
   public usersCollection: CollectionReference;
   public productCollection: CollectionReference;
+  // ref
+  public storageRef: StorageReference;
 
   constructor(private configService: ConfigService<Config>) {
     this.app = initializeApp({
@@ -32,11 +41,16 @@ export class FirebaseService {
 
     this.auth = getAuth(this.app);
     this.fireStore = getFirestore(this.app);
+    this.firebaseStorage = getStorage(this.app);
 
     this._createCollections();
+    this._ref();
   }
   private _createCollections() {
     this.usersCollection = collection(this.fireStore, 'users');
     this.productCollection = collection(this.fireStore, 'products');
+  }
+  private _ref() {
+    this.storageRef = ref(this.firebaseStorage).root;
   }
 }

@@ -15,6 +15,8 @@ import {
   endBefore,
   doc,
   Query,
+  getCountFromServer,
+  collectionGroup,
 } from 'firebase/firestore';
 import { Product } from './../dto/product.dto';
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
@@ -25,6 +27,7 @@ export class ProductService {
   constructor(private firebaseService: FirebaseService) {}
   private limitItem = 2;
   private totalPage: number;
+  private totalProduct: number;
   private page = 1;
   private lastVisibleCitySnapShot = {};
 
@@ -93,35 +96,68 @@ export class ProductService {
     return this.fetchProduct(sql);
   }
 
-  async findByPage(page: string): Promise<Product[]> {
-    this.page = Number(page);
-    const q = query(this.firebaseService.productCollection, orderBy('name'));
-    const get = await getDocs(q);
-    this.totalPage = Math.ceil(get.docs.length / this.limitItem);
-
-    if (page === '1' || Number(page) > this.totalPage) {
-      return this.findAll();
-    }
-
-    const indexOf = this.limitItem * (Number(page) - 1);
-    this.lastVisibleCitySnapShot = get.docs[indexOf - 1];
-
-    const sql = query(
-      this.firebaseService.productCollection,
-      orderBy('name'),
-      startAfter(this.lastVisibleCitySnapShot),
-      limit(this.limitItem),
-    );
-    return this.fetchProduct(sql);
+  async fetchProductTotal(): Promise<void> {
+    const q = collectionGroup(this.firebaseService.fireStore, 'products');
+    const get = await getCountFromServer(q);
+    this.totalProduct = get.data().count;
+    this.totalPage = Math.ceil(this.totalProduct / this.limitItem);
   }
 
   async fetchProduct(payload: Query<DocumentData>): Promise<Product[]> {
     try {
+      this.fetchProductTotal();
+      const sql: Query<DocumentData> = payload;
+
+      const snapshot = await getDocs(sql);
+      this.lastVisibleCitySnapShot = snapshot.docs[snapshot.docs.length - 1];
+
+      if (!this.lastVisibleCitySnapShot || this.page > this.totalPage) {
+        return this.findAll();
+      }
+
+      const docArr = [];
+      await snapshot.docs.forEach((doc) => {
+        docArr.push(Object.assign({ id: doc.id }, doc.data()));
+      });
+
+      const result = {
+        page: this.page,
+        total: this.totalProduct,
+        total_page: this.totalPage,
+        per_page: this.limitItem,
+        length: snapshot.docs.length,
+      };
+
+      return { ...result, ...docArr };
+    } catch (error) {
+      const firebaseAuthError = error as AuthError;
+      console.log(`[NEXT PRODUCTS] -> ${firebaseAuthError.code}`);
+      if (firebaseAuthError.code === 'auth/email-already-in-use') {
+        throw new HttpException('Email already exists.', HttpStatus.CONFLICT);
+      }
+    }
+  }
+
+  async findByPage(page: string): Promise<Product[]> {
+    try {
+      this.page = Number(page);
       const q = query(this.firebaseService.productCollection, orderBy('name'));
       const get = await getDocs(q);
       this.totalPage = Math.ceil(get.docs.length / this.limitItem);
 
-      const sql: Query<DocumentData> = payload;
+      if (page === '1' || Number(page) > this.totalPage) {
+        return this.findAll();
+      }
+
+      const indexOf = this.limitItem * (Number(page) - 1);
+      this.lastVisibleCitySnapShot = get.docs[indexOf - 1];
+
+      const sql = query(
+        this.firebaseService.productCollection,
+        orderBy('name'),
+        startAfter(this.lastVisibleCitySnapShot),
+        limit(this.limitItem),
+      );
 
       const snapshot = await getDocs(sql);
       this.lastVisibleCitySnapShot = snapshot.docs[snapshot.docs.length - 1];

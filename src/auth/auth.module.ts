@@ -1,3 +1,4 @@
+import { MulterConfigService } from './../multer/multer.service';
 import { JwtStrategy } from './jwt.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { FirebaseService } from 'src/firebase/firebase.service';
@@ -18,6 +19,9 @@ import { LocalStrategy } from './local.strategy';
       secret: jwtConstants.secret,
       signOptions: { expiresIn: '1h' },
     }),
+    // MulterModule.registerAsync({
+    //   useClass: MulterConfigService,
+    // }),
   ],
   controllers: [AuthController],
   providers: [AuthService, FirebaseService, LocalStrategy, JwtStrategy],

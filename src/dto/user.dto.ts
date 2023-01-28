@@ -1,3 +1,4 @@
+import { IsEmail, IsEnum, IsString } from 'class-validator';
 import { Role } from 'src/role/roles.enum';
 
 export class User {
@@ -6,4 +7,14 @@ export class User {
   password: string;
   id: string;
   roles: Role[];
+}
+export class CreateUserDto {
+  @IsString()
+  name: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  password: string;
 }

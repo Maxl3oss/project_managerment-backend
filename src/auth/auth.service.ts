@@ -1,3 +1,5 @@
+import { CreateUserDto } from './../dto/user.dto';
+import { Role } from 'src/role/roles.enum';
 import { JwtService } from '@nestjs/jwt';
 import { User } from 'src/dto/user.dto';
 import { FirebaseService } from './../firebase/firebase.service';
@@ -16,6 +18,7 @@ import {
   DocumentData,
   getDoc,
 } from 'firebase/firestore';
+import { uploadBytes, ref, getDownloadURL } from 'firebase/storage';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +27,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  public async login(email: string, password: string): Promise<any> {
+  async login(email: string, password: string): Promise<any> {
     try {
       const userCredential: UserCredential = await signInWithEmailAndPassword(
         this.firebaseService.auth,
@@ -72,7 +75,7 @@ export class AuthService {
     }
   }
 
-  public async register(body: Omit<User, 'id'>): Promise<void> {
+  async register(body: CreateUserDto): Promise<void> {
     try {
       const userCredential: UserCredential =
         await createUserWithEmailAndPassword(
@@ -86,7 +89,7 @@ export class AuthService {
           this.firebaseService.usersCollection,
           uid,
         );
-        await setDoc(docRef, body);
+        await setDoc(docRef, Object.assign(body, { roles: Role.User }));
       }
     } catch (error: unknown) {
       const firebaseAuthError = error as AuthError;
@@ -97,7 +100,7 @@ export class AuthService {
     }
   }
 
-  public async refresh(user: Omit<User, 'password'>): Promise<any> {
+  async refresh(user: Omit<User, 'password'>): Promise<any> {
     const payload = {
       id: user.id,
       name: user.name,
@@ -107,5 +110,28 @@ export class AuthService {
     return {
       access_token: this.jwtService.sign(payload),
     };
+  }
+
+  async uploadProfile(
+    uid: Omit<User, 'password'>,
+    file: Express.Multer.File,
+  ): Promise<any> {
+    try {
+      let pathAvatar;
+      const avatarRef = ref(
+        this.firebaseService.firebaseStorage,
+        `avatar/${Date.now() + '.' + file.originalname.split('.')[1]}`,
+      );
+      await uploadBytes(avatarRef, file.buffer).then((snapshot) => {
+        pathAvatar = snapshot.ref.fullPath;
+      });
+      return pathAvatar;
+    } catch (error) {
+      const firebaseAuthError = error as AuthError;
+      console.log(`[FIREBASE AUTH ERROR CODE] -> ${firebaseAuthError.code}`);
+      if (firebaseAuthError.code === 'auth/email-already-in-use') {
+        throw new HttpException('Email already exists.', HttpStatus.CONFLICT);
+      }
+    }
   }
 }
