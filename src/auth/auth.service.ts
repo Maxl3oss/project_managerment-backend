@@ -17,6 +17,7 @@ import {
   DocumentSnapshot,
   DocumentData,
   getDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import { uploadBytes, ref, getDownloadURL } from 'firebase/storage';
 
@@ -112,11 +113,9 @@ export class AuthService {
     };
   }
 
-  async uploadProfile(
-    uid: Omit<User, 'password'>,
-    file: Express.Multer.File,
-  ): Promise<any> {
+  async uploadProfile(uid: string, file: Express.Multer.File): Promise<any> {
     try {
+      // upload avatar
       let pathAvatar;
       const avatarRef = ref(
         this.firebaseService.firebaseStorage,
@@ -125,13 +124,36 @@ export class AuthService {
       await uploadBytes(avatarRef, file.buffer).then((snapshot) => {
         pathAvatar = snapshot.ref.fullPath;
       });
-      return pathAvatar;
+
+      const urlAvatar = await getDownloadURL(
+        ref(this.firebaseService.firebaseStorage, pathAvatar),
+      );
+      // update user avatar
+      this.updateAvatar(uid, urlAvatar);
+
+      // return '[URL AVATAR] -> ' + urlAvatar;
+      return 'Profile successfully updated';
     } catch (error) {
-      const firebaseAuthError = error as AuthError;
-      console.log(`[FIREBASE AUTH ERROR CODE] -> ${firebaseAuthError.code}`);
-      if (firebaseAuthError.code === 'auth/email-already-in-use') {
+      console.log(error);
+      console.log(`[FIREBASE UPLOAD AVATAR] -> ${error.code}`);
+      if (error.code === 'auth/email-already-in-use') {
         throw new HttpException('Email already exists.', HttpStatus.CONFLICT);
       }
+    }
+  }
+
+  async updateAvatar(uid: string, avatarUrl: string) {
+    try {
+      const docRef: DocumentReference = doc(
+        this.firebaseService.usersCollection,
+        uid,
+      );
+      await updateDoc(docRef, {
+        avatar: avatarUrl,
+      });
+      return true;
+    } catch (error) {
+      console.log(error);
     }
   }
 }

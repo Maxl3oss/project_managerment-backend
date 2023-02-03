@@ -7,6 +7,7 @@ export class User {
   password: string;
   id: string;
   roles: Role[];
+  avatar: string;
 }
 export class CreateUserDto {
   @IsString()

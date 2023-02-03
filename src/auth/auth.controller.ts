@@ -45,7 +45,7 @@ export class AuthController {
     return this.authService.refresh(req);
   }
 
-  @Post('upload')
+  @Post('avatar')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('avatar'))
   uploadProfile(
